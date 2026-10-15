@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: clinicared_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Esto ejecuta tu script SQL automáticamente la primera vez que se crea el contenedor
+      - ./docs/database/01_init_schema.sql:/docker-entrypoint-initdb.d/01_init_schema.sql
+      # Esto guarda los datos para que no se borren si apagas el contenedor
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
