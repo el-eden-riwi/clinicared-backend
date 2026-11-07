@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 
 from src.core.database import engine, Base
 from src.models import patient  # Importamos el modelo para que SQLAlchemy lo reconozca
-from src.api.routes import patients, simulators
+from src.api.routes import patients, simulators, risk  # <-- Aquí agregamos 'risk'
 
 # Crea las tablas en la base de datos si no existen
 Base.metadata.create_all(bind=engine)
@@ -27,6 +27,7 @@ app.add_middleware(
 # Registrar los routers
 app.include_router(patients.router)
 app.include_router(simulators.router)
+app.include_router(risk.router)  # <-- Aquí registramos la nueva ruta de riesgo
 
 @app.get("/", include_in_schema=False)
 def read_root():

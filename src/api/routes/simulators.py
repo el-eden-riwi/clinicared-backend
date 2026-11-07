@@ -1,5 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from src.services.messaging.producer import publish_reminder_event
+import uuid
 
 router = APIRouter(
     prefix="/simulate",
@@ -12,25 +14,44 @@ class AdmissionCheckRequest(BaseModel):
 class MessageNotificationRequest(BaseModel):
     recipient: str
     message: str
-    channel: str = "SMS"  # SMS o EMAIL
+    channel: str = "SMS" # SMS o EMAIL
 
 @router.post("/admissions/verify")
 def simulate_admission_check(payload: AdmissionCheckRequest):
-    """Simula la validación de estado o afiliación en el sistema de admisiones externo."""
-    is_active = int(payload.national_id[-1]) % 2 == 0 if payload.national_id.isdigit() else True
+    """Simula la validación de estado o afiliación de un paciente."""
+    is_active = int(payload.national_id[-1]) % 2 == 0 if payload.national_id[-1].isdigit() else True
     return {
         "national_id": payload.national_id,
-        "status": "ACTIVE" if is_active else "PENDING_AUTHORIZATION",
+        "status": "ACTIVE" if is_active else "INACTIVE",
         "network": "ClínicaRed Preferred",
-        "message": "Verificación de admisiones simulada con éxito."
+        "message": "Verificación de admisión completada."
     }
 
 @router.post("/messaging/send")
 def simulate_send_message(payload: MessageNotificationRequest):
-    """Simula el envío de un mensaje o recordatorio de cita (SMS/Email)."""
-    return {
-        "status": "SENT",
-        "channel": payload.channel.upper(),
-        "recipient": payload.recipient,
-        "simulated_gateway_response": "OK_200_DISPATCHED"
+    """
+    Endpoint Gateway (Task 2): Recibe una solicitud HTTP REST y la 
+    inyecta en la cola de RabbitMQ mediante el Productor.
+    """
+    # Formateamos el mensaje con un ID único para la idempotencia
+    mensaje = {
+        "message_id": f"API-{uuid.uuid4().hex[:8]}", 
+        "paciente": payload.recipient,
+        "tipo": payload.channel.lower(),
+        "contenido": payload.message
     }
+    
+    # Definimos la ruta dependiendo del canal
+    routing_key = f"reminder.{payload.channel.lower()}.gateway"
+    
+    # Disparamos el mensaje a RabbitMQ
+    success = publish_reminder_event(routing_key=routing_key, payload=mensaje)
+    
+    if success:
+        return {
+            "status": "QUEUED",
+            "channel": payload.channel,
+            "message": "Mensaje inyectado exitosamente en RabbitMQ"
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Fallo al conectar con RabbitMQ")
