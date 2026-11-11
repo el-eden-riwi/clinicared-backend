@@ -1,0 +1,39 @@
+# Entornos virtuales y Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Control de versiones y variables
+.git/
+.gitignore
+.env
+
+# Pruebas y cobertura
+tests/
+pytest.ini
+.pytest_cache/
+.coverage
+
+# Archivos Docker y documentación
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md
+
+# Logs
+*.log
+
+# Scripts locales de benchmark, semillas y pruebas
+prueba_duplicados.py
+spark_optimization_benchmark.py
+seed_attendances.py
+simulacion_politicas.py
+
+# Editor
+.vscode/
+.idea/
